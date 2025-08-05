@@ -1,54 +1,64 @@
 import os
+import csv
 
+# Classe Transaction
+class Transaction:
+    def __init__(self, no_txn, date, compte, montant, commentaire):
+        self.no_txn = int(no_txn)
+        self.date = date
+        self.compte = compte
+        self.montant = float(montant)
+        self.commentaire = commentaire
+
+class AccountManager:
+    def __init__(self, transactions):
+        self.transactions = transactions
+
+    def calculate_balance(self, account_name):
+        return sum(txn.montant for txn in self.transactions if txn.compte == account_name)
+
+    def get_all_accounts(self):
+        accounts = set(txn.compte for txn in self.transactions)
+        return list(accounts)
+    
 def read_data_file():
-    data = []
-    file = open('data.csv', 'r', encoding='utf-8')
-    lines = file.readlines()
-    file.close()
-    
-    i = 0
-    while i < len(lines):
-        if i == 0:
-            i += 1
-            continue
-        line = lines[i].strip()
-        if line:
-            parts = []
-            current_part = ""
-            in_quotes = False
-            j = 0
-            while j < len(line):
-                char = line[j]
-                if char == '"':
-                    in_quotes = not in_quotes
-                elif char == ',' and not in_quotes:
-                    parts.append(current_part)
-                    current_part = ""
-                    j += 1
-                    continue
-                current_part += char
-                j += 1
-            parts.append(current_part)
+    transactions = []
+    try:
+        with open('data.csv', 'r', encoding='utf-8') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip header row
             
-            if len(parts) >= 5:
-                txn_dict = {}
-                txn_dict['no_txn'] = int(parts[0])
-                txn_dict['date'] = parts[1]
-                txn_dict['compte'] = parts[2]
-                txn_dict['montant'] = float(parts[3])
-                txn_dict['commentaire'] = parts[4]
-                data.append(txn_dict)
-        i += 1
+            for line_num, row in enumerate(reader, start=2):  # Start at 2 because we skip header
+                if len(row) >= 5:
+                    try:
+                        transaction = Transaction(
+                            no_txn=row[0],
+                            date=row[1],
+                            compte=row[2],
+                            montant=row[3],
+                            commentaire=row[4]
+                        )
+                        transactions.append(transaction)
+                    except ValueError as e:
+                        print(f"⚠️  Ligne {line_num} ignorée: {e}")
+                        continue
+                        
+    except FileNotFoundError:
+        print("❌ ERREUR: Le fichier data.csv est introuvable!")
+        return []
+    except Exception as e:
+        print(f"❌ Erreur lors de la lecture du fichier: {e}")
+        return []
     
-    return data
+    return transactions
 
 def calculate_balance(data, account_name):
     balance = 0.0
     i = 0
     while i < len(data):
         transaction = data[i]
-        if transaction['compte'] == account_name:
-            balance += transaction['montant']
+        if transaction.compte == account_name:
+            balance += transaction.montant
         i += 1
     return balance
 
@@ -57,7 +67,7 @@ def get_all_accounts(data):
     i = 0
     while i < len(data):
         transaction = data[i]
-        account = transaction['compte']
+        account = transaction.compte  # Utilisation de la notation par point
         found = False
         j = 0
         while j < len(accounts):
@@ -72,31 +82,25 @@ def get_all_accounts(data):
 
 def display_all_transactions(data):
     print("\n=== TOUTES LES TRANSACTIONS ===")
-    i = 0
-    while i < len(data):
-        transaction = data[i]
-        print(f"Transaction {transaction['no_txn']} - {transaction['date']}")
-        print(f"  Compte: {transaction['compte']}")
-        print(f"  Montant: {transaction['montant']:.2f}$")
-        if transaction['commentaire']:
-            print(f"  Commentaire: {transaction['commentaire']}")
+    for transaction in data:
+        print(f"Transaction {transaction.no_txn} - {transaction.date}")
+        print(f"  Compte: {transaction.compte}")
+        print(f"  Montant: {transaction.montant:.2f}$")
+        if transaction.commentaire:
+            print(f"  Commentaire: {transaction.commentaire}")
         print()
-        i += 1
 
 def display_transactions_by_account(data, account_name):
     print(f"\n=== TRANSACTIONS POUR LE COMPTE '{account_name}' ===")
     found_any = False
-    i = 0
-    while i < len(data):
-        transaction = data[i]
-        if transaction['compte'] == account_name:
+    for transaction in data:
+        if transaction.compte == account_name:
             found_any = True
-            print(f"Transaction {transaction['no_txn']} - {transaction['date']}")
-            print(f"  Montant: {transaction['montant']:.2f}$")
-            if transaction['commentaire']:
-                print(f"  Commentaire: {transaction['commentaire']}")
+            print(f"Transaction {transaction.no_txn} - {transaction.date}")
+            print(f"  Montant: {transaction.montant:.2f}$")
+            if transaction.commentaire:
+                print(f"  Commentaire: {transaction.commentaire}")
             print()
-        i += 1
     
     if not found_any:
         print(f"Aucune transaction trouvée pour le compte '{account_name}'")
@@ -116,7 +120,7 @@ def get_transactions_by_date_range(data, start_date, end_date):
     i = 0
     while i < len(data):
         transaction = data[i]
-        if start_date <= transaction['date'] <= end_date:
+        if start_date <= transaction.date <= end_date:
             filtered_transactions.append(transaction)
         i += 1
     return filtered_transactions
@@ -127,8 +131,8 @@ def find_largest_expense(data):
     i = 0
     while i < len(data):
         transaction = data[i]
-        if transaction['montant'] > max_amount and transaction['compte'] != 'Compte courant' and transaction['compte'] != 'Revenu':
-            max_amount = transaction['montant']
+        if transaction.montant > max_amount and transaction.compte != 'Compte courant' and transaction.compte != 'Revenu':
+            max_amount = transaction.montant
             largest_expense = transaction
         i += 1
     return largest_expense
@@ -138,8 +142,8 @@ def find_total_income(data):
     i = 0
     while i < len(data):
         transaction = data[i]
-        if transaction['compte'] == 'Revenu':
-            total += abs(transaction['montant'])
+        if transaction.compte == 'Revenu':
+            total += abs(transaction.montant)
         i += 1
     return total
 
@@ -148,8 +152,8 @@ def find_total_expenses(data):
     i = 0
     while i < len(data):
         transaction = data[i]
-        if transaction['compte'] != 'Compte courant' and transaction['compte'] != 'Revenu' and transaction['montant'] > 0:
-            total += transaction['montant']
+        if transaction.compte != 'Compte courant' and transaction.compte != 'Revenu' and transaction.montant > 0:
+            total += transaction.montant
         i += 1
     return total
 
@@ -159,8 +163,8 @@ def export_account_postings(data, account_name, filename):
     i = 0
     while i < len(data):
         transaction = data[i]
-        if transaction['compte'] == account_name:
-            line = f"{transaction['no_txn']},{transaction['date']},{transaction['compte']},{transaction['montant']},{transaction['commentaire']}\n"
+        if transaction.compte == account_name:
+            line = f"{transaction.no_txn},{transaction.date},{transaction.compte},{transaction.montant},{transaction.commentaire}\n"
             file.write(line)
         i += 1
     file.close()
@@ -187,6 +191,8 @@ def display_menu():
     print("7. Rechercher par période")
     print("0. Quitter")
     print("="*50)
+
+# Affichage des comptes disponibles pour la consultation de solde
 
 def handle_balance_inquiry(data, accounts):
     print("\n--- Consultation de solde ---")
@@ -232,9 +238,9 @@ def handle_statistics(data):
     
     largest_expense = find_largest_expense(data)
     if largest_expense:
-        print(f"\nPlus grosse dépense: {largest_expense['montant']:.2f}$ ({largest_expense['compte']})")
-        if largest_expense['commentaire']:
-            print(f"Commentaire: {largest_expense['commentaire']}")
+        print(f"\nPlus grosse dépense: {largest_expense.montant:.2f}$ ({largest_expense.compte})")
+        if largest_expense.commentaire:
+            print(f"Commentaire: {largest_expense.commentaire}")
     
     current_account_balance = calculate_balance(data, 'Compte courant')
     print(f"\nSolde du compte courant: {current_account_balance:.2f}$")
@@ -257,7 +263,7 @@ def handle_date_search(data):
         i = 0
         while i < len(filtered_data):
             transaction = filtered_data[i]
-            print(f"  {transaction['date']} - {transaction['compte']}: {transaction['montant']:.2f}$")
+            print(f"  {transaction.date} - {transaction.compte}: {transaction.montant:.2f}$")
             i += 1
 
 def handle_export(data, accounts):
@@ -284,6 +290,8 @@ def handle_export(data, accounts):
         export_account_postings(data, validated_account, filename)
     else:
         print(f"Compte '{account_input}' introuvable!")
+
+
 
 def main():
     print("Chargement des données...")
