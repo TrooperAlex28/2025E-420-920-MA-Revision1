@@ -10,7 +10,7 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
-piledger = "piledger:main"
+piledger = "piledger:main" 
 
 [build-system]
 requires = ["hatchling"]

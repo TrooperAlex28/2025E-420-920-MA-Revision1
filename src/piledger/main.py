@@ -1,5 +1,7 @@
+import sys
 import os
 import csv
+
 
 # Classe Transaction
 class Transaction:
@@ -290,7 +292,6 @@ def handle_export(data, accounts):
         export_account_postings(data, validated_account, filename)
     else:
         print(f"Compte '{account_input}' introuvable!")
-
 
 
 def main():
