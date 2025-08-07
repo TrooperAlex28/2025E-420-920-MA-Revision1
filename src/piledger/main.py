@@ -1,5 +1,6 @@
 # Imports des classes et fonctions nécessaires
-from .accountmanager import (
+from .export_management import handle_export
+from .account_manager import (
     read_data_file,
     AccountManager, 
     DisplayTransactions,
@@ -8,8 +9,7 @@ from .accountmanager import (
     handle_balance_inquiry,
     handle_statistics,
     handle_date_search,
-    validate_account_name,
-    handle_export
+    validate_account_name,  # ✅ Déjà définie dans account_manager.py
 )
 
 def main():

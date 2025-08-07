@@ -157,30 +157,8 @@ class Statistics:
                 total += transaction.montant
         return total
 
-class ExportTransactions:
-    def __init__(self, data):
-        self.data = data
 
-    def export_account_postings(self, account_name, filename):
-        with open(filename, 'w', encoding='utf-8') as file:
-            file.write("No txn,Date,Compte,Montant,Commentaire\n")
-            for transaction in self.data:
-                if transaction.compte == account_name:
-                    line = f"{transaction.no_txn},{transaction.date},{transaction.compte},{transaction.montant},{transaction.commentaire}\n"
-                    file.write(line)
-        print(f"Écritures exportées vers {filename}")
-
-    def validate_account_name(self, account_name):
-        # Obtenir tous les comptes uniques
-        all_accounts = GetAllAccounts(self.data).get_all_accounts()
-        
-        # Chercher une correspondance (insensible à la casse)
-        for account in all_accounts:
-            if account.lower() == account_name.lower():
-                return account
-        return None
-        
-
+# Gestion de l'interface utilisateur
 class UIManager:
     def __init__(self, data):
         self.data = data
@@ -214,7 +192,7 @@ def handle_balance_inquiry(data, accounts):
         print("Nom de compte invalide!")
         return
     
-    validated_account = ExportTransactions(data).validate_account_name(account_input)
+    validated_account = validate_account_name(accounts, account_input)
     
     if validated_account:
         balance = Balance(data).calculate_balance(validated_account)
@@ -224,15 +202,43 @@ def handle_balance_inquiry(data, accounts):
         print(f"Compte '{account_input}' introuvable!")
         print("Vérifiez l'orthographe ou choisissez un compte dans la liste.")
 
+class HandleStatistics:
+    def __init__(self, data):
+        self.data = data
+        self.stats = Statistics(data)
 def handle_statistics(data):
     print("\n=== STATISTIQUES FINANCIÈRES ===")
+
+    # Créer une instance de AccountManager pour le calcul de solde
+    account_manager = AccountManager(data)
+    stats = Statistics(data)
     
-    # Créer une instance de Balance
-    balance_calculator = Balance(data)
+    # Calculs statistiques
+    total_income = stats.find_total_income()
+    total_expenses = stats.find_total_expenses()
+    net_worth = total_income - total_expenses
     
-    # Appeler la méthode via l'instance
-    current_account_balance = balance_calculator.calculate_balance('Compte courant')
+    print(f"Revenus totaux: {total_income:.2f}$")
+    print(f"Dépenses totales: {total_expenses:.2f}$")
+    print(f"Situation nette: {net_worth:.2f}$")
+    
+    if net_worth > 0:
+        print("📈 Situation financière positive")
+    elif net_worth < 0:
+        print("📉 Situation financière négative")
+    else:
+        print("⚖️  Situation financière équilibrée")
+    
+    # Utiliser AccountManager pour le solde
+    current_account_balance = account_manager.calculate_balance('Compte courant')
     print(f"\nSolde du compte courant: {current_account_balance:.2f}$")
+    
+    # Plus grosse dépense
+    largest_expense = stats.find_largest_expense()
+    if largest_expense:
+        print(f"\nPlus grosse dépense: {largest_expense.montant:.2f}$ ({largest_expense.compte})")
+        if largest_expense.commentaire:
+            print(f"Commentaire: {largest_expense.commentaire}")
 
 def handle_date_search(data):
     print("\n--- Recherche par période ---")
@@ -262,28 +268,3 @@ def validate_account_name(accounts, account_name):
             return account
     return None
 
-def handle_export(data, accounts):
-    print("\n--- Exportation ---")
-    print("Comptes disponibles:")
-    for account in accounts:  # ✅ Plus pythonique que while
-        print(f"  - {account}")
-    
-    account_input = input("\nEntrez le nom du compte à exporter: ").strip()
-    
-    if not account_input:
-        print("Nom de compte invalide!")
-        return
-    
-    
-    validated_account = validate_account_name(accounts, account_input)
-    
-    if validated_account:
-        filename = input("Nom du fichier de sortie (ex: export.csv): ").strip()
-        if not filename:
-            filename = f"export_{validated_account.replace(' ', '_').lower()}.csv"
-        
-     
-        exporter = ExportTransactions(data)
-        exporter.export_account_postings(validated_account, filename)
-    else:
-        print(f"Compte '{account_input}' introuvable!")
