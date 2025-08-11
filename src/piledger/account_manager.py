@@ -51,19 +51,6 @@ def read_data_file():
     
     return transactions
 
-class Balance: 
-    def __init__(self, data):
-        self.data = data
-
-    def calculate_balance(self, account_name):
-        balance = 0.0
-        i = 0
-        while i < len(self.data):
-            transaction = self.data[i]
-            if transaction.compte == account_name:
-                balance += transaction.montant
-            i += 1
-        return balance
 
 class GetAllAccounts:
     def __init__(self, data):
@@ -75,15 +62,12 @@ class GetAllAccounts:
             transaction = self.data[i]
             account = transaction.compte  # Utilisation de la notation par point
             found = False
-            j = 0
-            while j < len(accounts):
+            for j in range(len(accounts)):
                 if accounts[j] == account:
                     found = True
                     break
-                j += 1
             if not found:
                 accounts.append(account)
-            i += 1
         return accounts
 
 class DisplayTransactions:
@@ -118,7 +102,7 @@ class DisplayTransactions:
         accounts = GetAllAccounts(self.data).get_all_accounts()
         i = 0
         for account in accounts:
-            balance = Balance(self.data).calculate_balance(account)
+            balance = AccountManager
             print(f"{account}: {balance:.2f}$")
 
 
@@ -181,11 +165,9 @@ class UIManager:
 def handle_balance_inquiry(data, accounts):
     print("\n--- Consultation de solde ---")
     print("Comptes disponibles:")
-    i = 0
-    while i < len(accounts):
-        print(f"  - {accounts[i]}")
-        i += 1
-    
+    for account in accounts:
+        print(f"  - {account}")
+
     account_input = input("\nEntrez le nom du compte: ").strip()
     
     if not account_input:
@@ -195,7 +177,7 @@ def handle_balance_inquiry(data, accounts):
     validated_account = validate_account_name(accounts, account_input)
     
     if validated_account:
-        balance = Balance(data).calculate_balance(validated_account)
+        balance = AccountManager(data).calculate_balance(validated_account)
         print(f"\nSolde du compte '{validated_account}': {balance:.2f}$")
         
     else:
@@ -255,11 +237,8 @@ def handle_date_search(data):
         print(f"Aucune transaction trouvée entre {start_date} et {end_date}")
     else:
         print(f"\n{len(filtered_data)} écritures(s) trouvée(s) entre {start_date} et {end_date}:")
-        i = 0
-        while i < len(filtered_data):
-            transaction = filtered_data[i]
+        for transaction in filtered_data:
             print(f"  {transaction.date} - {transaction.compte}: {transaction.montant:.2f}$")
-            i += 1
 
 def validate_account_name(accounts, account_name):
     """Valide un nom de compte (insensible à la casse)"""

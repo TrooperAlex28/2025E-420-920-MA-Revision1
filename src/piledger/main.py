@@ -6,22 +6,22 @@ from .account_manager import (
     DisplayTransactions,
     Statistics,
     UIManager,
-    handle_balance_inquiry,
+    validate_account_name,
     handle_statistics,
     handle_date_search,
-    validate_account_name,  # ✅ Déjà définie dans account_manager.py
+   
 )
 
-def main():
+def main(): 
     print("Chargement des données...")
     data = read_data_file()
-    account_manager = AccountManager(data)
-    accounts = account_manager.get_all_accounts()
     
-    # Créer les instances une fois pour toute la session
+    # ✅ Créer les instances une seule fois
+    account_manager = AccountManager(data)
     display_manager = DisplayTransactions(data)
     stats_manager = Statistics(data)
     
+    accounts = account_manager.get_all_accounts()
     print(f"✅ {len(data)} transactions chargées avec succès!")
     
     running = True
@@ -35,16 +35,15 @@ def main():
             break
         
         if choice == "1":
-            handle_balance_inquiry(data, accounts)
+            # ✅ Utiliser la fonction optimisée
+            handle_balance_inquiry_optimized(account_manager, accounts)
         elif choice == "2":
             display_manager.display_all_transactions()
         elif choice == "3":
             print("\n--- Transactions par compte ---")
             print("Comptes disponibles:")
-            i = 0
-            while i < len(accounts):
-                print(f"  - {accounts[i]}")
-                i += 1
+            for account in accounts:  # ✅ Plus pythonique que while
+                print(f"  - {account}")
             
             account_input = input("\nEntrez le nom du compte: ").strip()
             
@@ -59,7 +58,8 @@ def main():
         elif choice == "4":
             display_manager.display_summary()
         elif choice == "5":
-            handle_statistics(data)
+            # ✅ Corriger les paramètres de handle_statistics
+            handle_statistics(data)  # Cette fonction n'attend qu'un seul paramètre
         elif choice == "6":
             handle_export(data, accounts)
         elif choice == "7":
@@ -73,6 +73,28 @@ def main():
         
         if running and choice != "0":
             input("\nAppuyez sur Entrée pour continuer...")
+
+def handle_balance_inquiry_optimized(account_manager, accounts):
+    """Version optimisée qui reçoit l'instance AccountManager"""
+    print("\n--- Consultation de solde ---")
+    print("Comptes disponibles:")
+    for account in accounts:
+        print(f"  - {account}")
+
+    account_input = input("\nEntrez le nom du compte: ").strip()
+    
+    if not account_input:
+        print("Nom de compte invalide!")
+        return
+    
+    validated_account = validate_account_name(accounts, account_input)
+    
+    if validated_account:
+        balance = account_manager.calculate_balance(validated_account)
+        print(f"\nSolde du compte '{validated_account}': {balance:.2f}$")
+    else:
+        print(f"Compte '{account_input}' introuvable!")
+        print("Vérifiez l'orthographe ou choisissez un compte dans la liste.")
 
 if __name__ == "__main__":
     main()
