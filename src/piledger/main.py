@@ -1,28 +1,42 @@
 # Imports des classes et fonctions nécessaires
 from .export_management import handle_export
-from .account_manager import (
-    read_data_file,
-    AccountManager, 
-    DisplayTransactions,
-    Statistics,
-    UIManager,
-    validate_account_name,
-    handle_statistics,
-    handle_date_search,
-   
-)
+from .data_handler import read_data_file
+from .account_operations import AccountManager, validate_account_name
+from .transaction_display import DisplayTransactions
+from .statistics import Statistics, handle_statistics
+from .search_operations import handle_date_search
+from .ui_manager import UIManager
+import os  # Nouvel import
 
 def main(): 
     print("Chargement des données...")
-    data = read_data_file()
+    print(f"Répertoire de travail actuel: {os.getcwd()}")  # Ajouter import os en haut
+    
+    try:
+        data = read_data_file()
+        print(f"Debug - Type de data: {type(data)}")
+        print(f"Debug - Valeur de data: {data}")
+    except Exception as e:
+        print(f"Erreur lors du chargement: {e}")
+        return
     
     # ✅ Créer les instances une seule fois
     account_manager = AccountManager(data)
     display_manager = DisplayTransactions(data)
     stats_manager = Statistics(data)
-    
+
+    # Add null checks and error handling
+    if data is None:
+        print("❌ Erreur: Aucune donnée chargée!")
+        return
+
     accounts = account_manager.get_all_accounts()
+    if accounts is None:
+        print("❌ Erreur: Impossible de récupérer les comptes!")
+        accounts = []  # Fallback to empty list
+
     print(f"✅ {len(data)} transactions chargées avec succès!")
+    print(f"✅ {len(accounts)} comptes détectés: {', '.join(accounts) if accounts else 'Aucun'}")
     
     running = True
     while running:
@@ -30,7 +44,7 @@ def main():
         
         try:
             choice = input("\nVotre choix: ").strip()
-        except:
+        except KeyboardInterrupt:
             print("\nAu revoir!")
             break
         
@@ -42,7 +56,7 @@ def main():
         elif choice == "3":
             print("\n--- Transactions par compte ---")
             print("Comptes disponibles:")
-            for account in accounts:  # ✅ Plus pythonique que while
+            for account in accounts:  
                 print(f"  - {account}")
             
             account_input = input("\nEntrez le nom du compte: ").strip()
